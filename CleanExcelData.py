@@ -1,16 +1,12 @@
 import datetime
 import os
-import traceback
 
 import openpyxl
 from config.conf import Paths
-import pandas as pd
 from os import listdir
 from os.path import isfile, join
 
 delimiter = os.sep
-
-
 excelFolder = Paths.EXCEL_FOLDER.value
 
 
@@ -28,18 +24,18 @@ def getExcelNameFromFolder() -> str:
         raise ValueError('Более 1 .xlsx файла (или ни одного) в папке ' + excelFolder)
 
 
-def clean(workbook):
+def cleanWorkbook(workbook):
     deleteRows = []
     sheet = workbook[workbook.sheetnames[0]]
     for i in range(6, sheet.max_row + 1):
-        # define emptiness of cell
+        # define invalidity of cell
         val = float(sheet.cell(row=i, column=2).value.replace(",", "."))
         print("ряд " + str(i) + " время: " + datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S") + "\tзначение = " + str(val))
-        if val < 5.8 or val > 5.9:
+        if val < 5.8 or val > 5.9: # condition
             # collect indexes of rows
             deleteRows.append(i)
 
-    cleanDeleteRows = cleanRows(deleteRows)
+    cleanDeleteRows = cleanRows(deleteRows) # to reduce the time we've got to make dict {beginIdx: quantity}
     for key in cleanDeleteRows:
         print("Удаляем " + str(key) + "   " + str(cleanDeleteRows[key]) + " время: " + datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
         amount = cleanDeleteRows[key]
@@ -66,18 +62,21 @@ def cleanRows(deleteRows) ->dict : # we need to get dict with REVERSE order (fro
 
     return result
 
-workbook = None
-try:
-    currentExcelFile = getExcelNameFromFolder()
-    print("Смотрим этот файл: " + currentExcelFile)
-    print("начало - " + datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
-    workbook = openpyxl.load_workbook(currentExcelFile)  # очень важно!! в названии листа не должно быть нижнего подчеркивнаия "_" иначе программа ломается
-    print("workbook - " + datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
-    clean(workbook)
-    workbook.save(excelFolder + delimiter + currentExcelFile.replace(".xlsx", "_" + datetime.datetime.now().strftime("%d-%m-%Y(%H;%M)") + ".xlsx"))
-except ValueError as ex:
-    print("ОШИБКА")
-    print(ex)
-finally:
-    if workbook is not None:
-        workbook.close()
+def getCleanExcelFile():
+    workbook = None
+    try:
+        currentExcelFile = getExcelNameFromFolder()
+        print("Смотрим этот файл: " + currentExcelFile)
+        print("начало - " + datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
+        workbook = openpyxl.load_workbook(currentExcelFile)  # очень важно!! в названии листа не должно быть нижнего подчеркивнаия "_" иначе программа ломается
+        print("workbook - " + datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
+        cleanWorkbook(workbook)
+        workbook.save(excelFolder + delimiter + currentExcelFile.replace(".xlsx", "_" + datetime.datetime.now().strftime("%d-%m-%Y(%H;%M)") + ".xlsx"))
+    except ValueError as ex:
+        print("!!!Exception!!!")
+        print(ex)
+    finally:
+        if workbook is not None:
+            workbook.close()
+
+getCleanExcelFile()
